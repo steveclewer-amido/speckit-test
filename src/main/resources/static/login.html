@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in — Calculator</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 1rem;
+            background: #f0f2f5;
+        }
+
+        main {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .12);
+            padding: 2rem;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        h1 {
+            margin: 0 0 1.5rem;
+            font-size: 1.5rem;
+            color: #1d1d1f;
+        }
+
+        .field {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: .875rem;
+            font-weight: 600;
+            color: #3c3c43;
+            margin-bottom: .35rem;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: .55rem .75rem;
+            border: 1.5px solid #c7c7cc;
+            border-radius: 6px;
+            font-size: 1rem;
+            color: #1d1d1f;
+            background: #fff;
+            transition: border-color .15s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, .2);
+        }
+
+        input[aria-invalid="true"] {
+            border-color: #d70015;
+        }
+
+        input[aria-invalid="true"]:focus {
+            box-shadow: 0 0 0 3px rgba(215, 0, 21, .2);
+        }
+
+        .field-error {
+            display: none;
+            margin-top: .3rem;
+            font-size: .8rem;
+            color: #d70015;
+        }
+
+        .auth-error {
+            display: none;
+            margin-bottom: 1rem;
+            padding: .75rem 1rem;
+            border-radius: 6px;
+            background: #ffebee;
+            color: #b71c1c;
+            border: 1px solid #ef9a9a;
+            font-size: .9rem;
+        }
+
+        button[type="submit"] {
+            display: block;
+            width: 100%;
+            margin-top: .5rem;
+            padding: .65rem 1rem;
+            background: #0071e3;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        button[type="submit"]:hover {
+            background: #0077ed;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Log in</h1>
+
+    <!-- Server-side auth error — shown when URL contains ?error -->
+    <div id="authError"
+         class="auth-error"
+         role="alert"
+         aria-live="polite"
+         aria-atomic="true">
+        Invalid username or password.
+    </div>
+
+    <form id="loginForm" method="POST" action="/login" novalidate>
+        <!-- CSRF token injected by JS before submission -->
+        <input type="hidden" name="_csrf" id="csrfInput">
+
+        <div class="field">
+            <label for="username">Username</label>
+            <input type="text"
+                   id="username"
+                   name="username"
+                   autocomplete="username"
+                   aria-required="true"
+                   aria-describedby="errUsername">
+            <span id="errUsername" class="field-error" role="alert" aria-live="assertive"></span>
+        </div>
+
+        <div class="field">
+            <label for="password">Password</label>
+            <input type="password"
+                   id="password"
+                   name="password"
+                   autocomplete="current-password"
+                   aria-required="true"
+                   aria-describedby="errPassword">
+            <span id="errPassword" class="field-error" role="alert" aria-live="assertive"></span>
+        </div>
+
+        <button type="submit">Log in</button>
+    </form>
+</main>
+
+<script>
+    'use strict';
+
+    /** Read a named cookie value, or null if absent. */
+    function getCookie(name) {
+        const match = document.cookie
+            .split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith(name + '='));
+        return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
+    }
+
+    /** Inject the CSRF token from the XSRF-TOKEN cookie into the hidden form field. */
+    function injectCsrfToken() {
+        const token = getCookie('XSRF-TOKEN');
+        if (token) {
+            document.getElementById('csrfInput').value = token;
+        }
+    }
+
+    /** Show an error on a field. */
+    function setFieldError(input, errEl, message) {
+        errEl.textContent = message;
+        errEl.style.display = 'block';
+        input.setAttribute('aria-invalid', 'true');
+        input.focus();
+    }
+
+    /** Clear an error on a field. */
+    function clearFieldError(input, errEl) {
+        errEl.textContent = '';
+        errEl.style.display = 'none';
+        input.removeAttribute('aria-invalid');
+    }
+
+    // ── Initialise on load ───────────────────────────────────────────────
+
+    const loginForm  = document.getElementById('loginForm');
+    const usernameEl = document.getElementById('username');
+    const passwordEl = document.getElementById('password');
+    const errUser    = document.getElementById('errUsername');
+    const errPass    = document.getElementById('errPassword');
+    const authError  = document.getElementById('authError');
+
+    // Show server-side auth error when URL contains ?error
+    if (new URLSearchParams(window.location.search).has('error')) {
+        authError.style.display = 'block';
+    }
+
+    // Inline field validation on submit
+    loginForm.addEventListener('submit', function (e) {
+        let valid = true;
+        clearFieldError(usernameEl, errUser);
+        clearFieldError(passwordEl, errPass);
+
+        if (usernameEl.value.trim() === '') {
+            setFieldError(usernameEl, errUser, 'Username is required.');
+            valid = false;
+        }
+
+        if (passwordEl.value === '') {
+            setFieldError(passwordEl, errPass, 'Password is required.');
+            if (valid) { passwordEl.focus(); }
+            valid = false;
+        }
+
+        if (!valid) {
+            e.preventDefault();
+            return;
+        }
+
+        injectCsrfToken();
+    });
+</script>
+</body>
+</html>

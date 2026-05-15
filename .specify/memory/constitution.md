@@ -1,50 +1,100 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+
+- Version change: template placeholder → 1.0.0
+- Modified principles: filled template placeholders with concrete principles
+	- I. Code Quality & Maintainability (NON-NEGOTIABLE)
+	- II. Testing Standards (NON-NEGOTIABLE)
+	- III. UX Consistency & Accessibility
+	- IV. Performance Budgets & Regression Prevention
+	- V. Definition of Done & Quality Gates
+- Added sections:
+	- Quality & Performance Requirements
+	- Workflow & Reviews
+- Removed sections: None
+- Templates requiring updates:
+	- ✅ .specify/templates/tasks-template.md
+- Follow-up TODOs: None
+-->
+
+# speckit-test Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Code Quality & Maintainability (NON-NEGOTIABLE)
+All production changes MUST be readable, consistent, and maintainable.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+- Prefer the simplest design that meets the spec (avoid unnecessary patterns).
+- Keep modules cohesive: small, well-named functions; clear responsibilities.
+- Eliminate dead code and unused dependencies.
+- Public APIs MUST be documented (docstrings/comments where the language expects).
+- Changes MUST keep or improve static analysis and linting results (where configured).
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Testing Standards (NON-NEGOTIABLE)
+Every change MUST be verifiable via automated tests appropriate to the behavior.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+- New behavior MUST include tests; bug fixes MUST add a regression test.
+- Prefer fast unit tests; add integration/contract tests when crossing boundaries.
+- Tests MUST be deterministic (no flakes, fixed clocks/random seeds where needed).
+- CI MUST fail on red tests; skipping/disabling tests requires explicit justification.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. UX Consistency & Accessibility
+User-facing behavior MUST be consistent, predictable, and accessible.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+- Reuse the existing design system/components and established interaction patterns.
+- Changes MUST include empty/loading/error states when applicable.
+- Accessibility MUST be preserved: keyboard navigation, labels, contrast, and focus.
+- Avoid breaking changes to UX flows without updating the spec and acceptance scenarios.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Performance Budgets & Regression Prevention
+Performance MUST be treated as a feature with measurable budgets.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- Each feature MUST declare relevant performance budgets (what, how measured, and target)
+	in the feature plan.
+- Changes MUST not introduce known regressions (latency, memory, CPU, bundle size,
+	or startup time) without explicit sign-off and a mitigation plan.
+- Prefer measuring before optimizing; profile to find the true bottleneck.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Definition of Done & Quality Gates
+A task is not “done” until quality gates are met.
+
+- Code compiles/builds and all required checks pass (lint, typecheck, tests).
+- Acceptance scenarios in the spec are satisfied.
+- UX consistency and accessibility checks are completed for user-facing changes.
+- Performance budgets are validated for performance-sensitive changes.
+- Documentation is updated when behavior or usage changes.
+
+## Quality & Performance Requirements
+
+- Feature work MUST define measurable success criteria and acceptance scenarios.
+- Feature plans MUST state relevant performance budgets and how they are validated.
+- If a performance budget cannot be met, the plan MUST include:
+	- the current measured baseline,
+	- the expected impact,
+	- mitigations, and
+	- an explicit decision record.
+
+## Workflow & Reviews
+
+- Work is tracked via feature specs/plans/tasks produced by Spec Kit.
+- Pull requests MUST:
+	- link to the relevant spec/plan/tasks,
+	- pass CI checks,
+	- include tests per the Testing Standards principle,
+	- include UX review notes for UI changes, and
+	- include performance validation notes when budgets are defined.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+This constitution governs how work is specified, implemented, and reviewed.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- Amendments MUST be made via a pull request that:
+	- explains the change,
+	- updates any impacted templates and guidance docs, and
+	- bumps the constitution version.
+- Versioning follows semantic versioning:
+	- MAJOR: breaking governance changes or principle removals/redefinitions
+	- MINOR: new principles/sections or materially expanded guidance
+	- PATCH: clarifications and non-semantic refinements
+- All reviews MUST consider constitution compliance as part of “Definition of Done”.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-05-14 | **Last Amended**: 2026-05-14

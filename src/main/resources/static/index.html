@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 1rem;
+            background: #f0f2f5;
+        }
+
+        main {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .12);
+            padding: 2rem;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        h1 {
+            margin: 0 0 1.5rem;
+            font-size: 1.5rem;
+            color: #1d1d1f;
+        }
+
+        .field {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: .875rem;
+            font-weight: 600;
+            color: #3c3c43;
+            margin-bottom: .35rem;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: .55rem .75rem;
+            border: 1.5px solid #c7c7cc;
+            border-radius: 6px;
+            font-size: 1rem;
+            color: #1d1d1f;
+            background: #fff;
+            transition: border-color .15s;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, .2);
+        }
+
+        input[aria-invalid="true"] {
+            border-color: #d70015;
+        }
+
+        input[aria-invalid="true"]:focus {
+            box-shadow: 0 0 0 3px rgba(215, 0, 21, .2);
+        }
+
+        .field-error {
+            display: none;
+            margin-top: .3rem;
+            font-size: .8rem;
+            color: #d70015;
+        }
+
+        button[type="submit"] {
+            display: block;
+            width: 100%;
+            margin-top: .5rem;
+            padding: .65rem 1rem;
+            background: #0071e3;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        button[type="submit"]:hover:not(:disabled) {
+            background: #0077ed;
+        }
+
+        button[type="submit"]:disabled {
+            background: #aeaeb2;
+            cursor: not-allowed;
+        }
+
+        #status {
+            display: none;
+            margin-top: 1.25rem;
+            padding: .85rem 1rem;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        #status.success {
+            background: #e8f5e9;
+            color: #1b5e20;
+            border: 1px solid #a5d6a7;
+        }
+
+        #status.error {
+            background: #ffebee;
+            color: #b71c1c;
+            border: 1px solid #ef9a9a;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-header h1 {
+            margin: 0;
+        }
+
+        .btn-logout {
+            padding: .4rem .85rem;
+            background: transparent;
+            color: #0071e3;
+            border: 1.5px solid #0071e3;
+            border-radius: 6px;
+            font-size: .875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+        }
+
+        .btn-logout:hover {
+            background: #0071e3;
+            color: #fff;
+        }
+
+        /* ── History panel ────────────────────────────── */
+
+        #historyPanel {
+            margin-top: 2rem;
+            border-top: 1px solid #e5e5ea;
+            padding-top: 1.5rem;
+        }
+
+        #historyPanel h2 {
+            margin: 0 0 1rem;
+            font-size: 1.1rem;
+            color: #1d1d1f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #historyEmpty {
+            color: #8e8e93;
+            font-size: .9rem;
+            margin: 0;
+        }
+
+        #historyList {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #historyList li {
+            padding: .45rem 0;
+            border-bottom: 1px solid #f2f2f7;
+            font-size: .9rem;
+            color: #3c3c43;
+        }
+
+        #historyList li:last-child {
+            border-bottom: none;
+        }
+
+        .history-expr {
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .history-time {
+            display: block;
+            font-size: .75rem;
+            color: #8e8e93;
+            margin-top: .15rem;
+        }
+
+        .btn-clear-history {
+            padding: .3rem .75rem;
+            background: transparent;
+            color: #d70015;
+            border: 1.5px solid #d70015;
+            border-radius: 6px;
+            font-size: .8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+        }
+
+        .btn-clear-history:hover {
+            background: #d70015;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <div class="page-header">
+        <h1>Calculator</h1>
+        <form id="logoutForm" method="POST" action="/logout">
+            <input type="hidden" name="_csrf" id="logoutCsrf">
+            <button type="submit" class="btn-logout">Log out</button>
+        </form>
+    </div>
+
+    <form id="calcForm" novalidate>
+        <div class="field">
+            <label for="numA">First number</label>
+            <input type="text"
+                   id="numA"
+                   name="a"
+                   inputmode="decimal"
+                   autocomplete="off"
+                   aria-required="true"
+                   aria-describedby="errA"
+                   placeholder="e.g. 6">
+            <span id="errA" class="field-error" role="alert" aria-live="assertive"></span>
+        </div>
+
+        <div class="field">
+            <label for="numB">Second number</label>
+            <input type="text"
+                   id="numB"
+                   name="b"
+                   inputmode="decimal"
+                   autocomplete="off"
+                   aria-required="true"
+                   aria-describedby="errB"
+                   placeholder="e.g. 7">
+            <span id="errB" class="field-error" role="alert" aria-live="assertive"></span>
+        </div>
+
+        <div class="field">
+            <label for="operation">Operation</label>
+            <select id="operation" name="operation" aria-required="true">
+                <option value="ADD">Add (+)</option>
+                <option value="SUBTRACT">Subtract (−)</option>
+                <option value="MULTIPLY">Multiply (×)</option>
+                <option value="DIVIDE">Divide (÷)</option>
+            </select>
+        </div>
+
+        <button type="submit" id="calcBtn" aria-label="Calculate result">Calculate</button>
+    </form>
+
+    <div id="status" role="alert" aria-live="polite" aria-atomic="true"></div>
+
+    <section id="historyPanel" aria-label="Calculation history">
+        <h2>
+            Calculation History
+            <button id="clearHistoryBtn" class="btn-clear-history" aria-label="Clear all history" style="display:none">Clear History</button>
+        </h2>
+        <p id="historyEmpty">No history yet.</p>
+        <ul id="historyList" aria-label="Recent calculations"></ul>
+    </section>
+</main>
+
+<script>
+    'use strict';
+
+    const form    = document.getElementById('calcForm');
+    const numA    = document.getElementById('numA');
+    const numB    = document.getElementById('numB');
+    const errA    = document.getElementById('errA');
+    const errB    = document.getElementById('errB');
+    const calcBtn = document.getElementById('calcBtn');
+    const status  = document.getElementById('status');
+
+    /** Returns true if value is a finite number string. */
+    function isValidNumber(val) {
+        const trimmed = val.trim();
+        return trimmed !== '' && Number.isFinite(Number(trimmed));
+    }
+
+    function setFieldError(input, errEl, message) {
+        errEl.textContent = message;
+        errEl.style.display = 'block';
+        input.setAttribute('aria-invalid', 'true');
+    }
+
+    function clearFieldError(input, errEl) {
+        errEl.textContent = '';
+        errEl.style.display = 'none';
+        input.removeAttribute('aria-invalid');
+    }
+
+    function showStatus(message, type) {
+        status.textContent = message;
+        status.className = type;
+        status.style.display = 'block';
+    }
+
+    function clearStatus() {
+        status.textContent = '';
+        status.style.display = 'none';
+        status.className = '';
+    }
+
+    /**
+     * Client-side validation — runs before the API call.
+     * Handles spec FR-004 / US2 AC-1 (empty) and AC-2 (non-numeric).
+     * Returns true only when all inputs are valid.
+     */
+    function validate() {
+        let valid = true;
+        clearFieldError(numA, errA);
+        clearFieldError(numB, errB);
+
+        if (numA.value.trim() === '') {
+            setFieldError(numA, errA, 'First number is required.');
+            valid = false;
+        } else if (!isValidNumber(numA.value)) {
+            setFieldError(numA, errA, 'First number must be a valid number.');
+            valid = false;
+        }
+
+        if (numB.value.trim() === '') {
+            setFieldError(numB, errB, 'Second number is required.');
+            valid = false;
+        } else if (!isValidNumber(numB.value)) {
+            setFieldError(numB, errB, 'Second number must be a valid number.');
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    function setLoading(loading) {
+        calcBtn.disabled = loading;
+        calcBtn.textContent = loading ? 'Calculating\u2026' : 'Calculate';
+    }
+
+    // Inject CSRF token from cookie into the logout form before submission
+    document.getElementById('logoutForm').addEventListener('submit', function () {
+        const raw = (document.cookie
+            .split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith('XSRF-TOKEN=')) || '').split('=').slice(1).join('=');
+        document.getElementById('logoutCsrf').value = decodeURIComponent(raw);
+    });
+
+    // ── History panel ────────────────────────────────────────
+
+    const historyList    = document.getElementById('historyList');
+    const historyEmpty   = document.getElementById('historyEmpty');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+    const OP_SYMBOL = { ADD: '+', SUBTRACT: '\u2212', MULTIPLY: '\u00d7', DIVIDE: '\u00f7' };
+
+    function formatEntry(entry) {
+        const sym = OP_SYMBOL[entry.operation] || entry.operation;
+        const res = Number.isInteger(entry.result)
+            ? entry.result
+            : Math.round(entry.result * 1e10) / 1e10;
+        return `${entry.operandA} ${sym} ${entry.operandB} = ${res}`;
+    }
+
+    async function loadHistory() {
+        try {
+            const resp = await fetch('/api/history');
+            if (!resp.ok) return;
+            const entries = await resp.json();
+            historyList.innerHTML = '';
+            if (entries.length === 0) {
+                historyEmpty.style.display = 'block';
+                clearHistoryBtn.style.display = 'none';
+            } else {
+                historyEmpty.style.display = 'none';
+                clearHistoryBtn.style.display = 'inline-block';
+                entries.forEach(entry => {
+                    const li = document.createElement('li');
+                    const time = new Date(entry.calculatedAt).toLocaleString();
+                    li.innerHTML =
+                        `<span class="history-expr">${formatEntry(entry)}</span>` +
+                        `<span class="history-time">${time}</span>`;
+                    historyList.appendChild(li);
+                });
+            }
+        } catch {
+            // silently ignore — history is non-critical
+        }
+    }
+
+    clearHistoryBtn.addEventListener('click', async () => {
+        try {
+            const resp = await fetch('/api/history', { method: 'DELETE' });
+            if (resp.status === 204) await loadHistory();
+        } catch {
+            // silently ignore
+        }
+    });
+
+    // Load history on page start
+    loadHistory();
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        clearStatus();
+
+        if (!validate()) return;
+
+        setLoading(true);
+
+        const payload = {
+            a:         Number(numA.value.trim()),
+            b:         Number(numB.value.trim()),
+            operation: document.getElementById('operation').value
+        };
+
+        try {
+            const response = await fetch('/api/calculate', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.result !== undefined && data.result !== null) {
+                showStatus('Result: ' + data.result, 'success');
+                loadHistory();
+            } else {
+                showStatus(data.error || 'An unexpected error occurred.', 'error');
+            }
+        } catch {
+            showStatus('Unable to reach the server. Please try again.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    });
+</script>
+</body>
+</html>
