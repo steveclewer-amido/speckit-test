@@ -29,7 +29,7 @@ Open [http://localhost:8080](http://localhost:8080). Log in with:
 - **Username**: `admin`
 - **Password**: `password`
 
-To run the test suite (39 tests):
+To run the test suite (53 tests):
 
 ```bash
 mvn test
@@ -40,8 +40,9 @@ mvn test
 ## What It Does
 
 - **Calculator**: Add, subtract, multiply, and divide two numbers via a clean HTML5 UI.
+- **Scientific Mode**: Toggle between basic and scientific mode. Scientific mode adds √, xʸ, ln, sin, cos, and tan — with degree input for trig functions and a tan(90°) guard.
 - **Authentication**: Custom login page backed by Spring Security. Access is denied without valid credentials. A logout link is available from the calculator page.
-- **Calculation History**: Every successful calculation is saved to an embedded H2 database. The authenticated user sees their last 20 results (newest first) below the calculator. History persists across app restarts. A "Clear History" button removes all entries for the current user.
+- **Calculation History**: Every successful calculation (basic and scientific) is saved to an embedded H2 database. The authenticated user sees their last 20 results (newest first) below the calculator. History persists across app restarts. A "Clear History" button removes all entries for the current user.
 
 ---
 
@@ -114,6 +115,23 @@ An optional analysis pass (`/speckit.analyze`) was run after task generation to 
 
 ---
 
+### Feature 004 — Scientific Calculator Mode
+
+**Branch**: `004-scientific-calc-mode`
+
+**Spec input**: *"Augment the calculator with scientific calculator functionality. Add a mode toggle (basic vs scientific). Scientific mode adds the following operations: square root (sqrt), power (x^y), natural log (log), sin, cos, tan."*
+
+**What was built**:
+- Mode toggle button (basic/scientific) — CSS show/hide, `aria-pressed`, no page reload
+- 6 new operations added to the `Operation` enum: `SQRT`, `POWER`, `LN`, `SIN`, `COS`, `TAN`
+- Unary operations (SQRT, LN, SIN, COS, TAN) omit `operandB`; POWER requires both operands
+- Degree-to-radian conversion server-side for trig; explicit `tan(90°)` guard
+- `CalculationHistory.operandB` made nullable to store unary results
+- Scientific results saved to history with correct display format (e.g. `√9 = 3`, `sin(30°) = 0.5`)
+- 14 new tests (11 service, 3 controller) — total 53
+
+---
+
 ## Project Structure
 
 ```
@@ -151,6 +169,7 @@ specs/
   001-calculator-ui/                    # spec, plan, data-model, tasks
   002-login-page/
   003-calc-history-persistence/
+  004-scientific-calc-mode/
 ```
 
 ---

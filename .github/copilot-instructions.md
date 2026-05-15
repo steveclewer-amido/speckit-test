@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-specs/003-calc-history-persistence/plan.md
+specs/004-scientific-calc-mode/plan.md
 <!-- SPECKIT END -->

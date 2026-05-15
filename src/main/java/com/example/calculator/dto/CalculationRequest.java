@@ -9,7 +9,6 @@ public class CalculationRequest {
     @NotNull(message = "Field 'a' must not be null.")
     private Double a;
 
-    @NotNull(message = "Field 'b' must not be null.")
     private Double b;
 
     @NotNull(message = "Field 'operation' must not be null.")

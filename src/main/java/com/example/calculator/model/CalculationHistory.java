@@ -21,7 +21,7 @@ public class CalculationHistory {
     @Column(name = "OPERAND_A", nullable = false)
     private Double operandA;
 
-    @Column(name = "OPERAND_B", nullable = false)
+    @Column(name = "OPERAND_B", nullable = true)
     private Double operandB;
 
     @Column(name = "OPERATION", nullable = false, length = 20)

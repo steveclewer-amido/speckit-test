@@ -1,6 +1,6 @@
 package com.example.calculator.service;
 
-/** The four supported arithmetic operations. */
+/** The ten supported arithmetic and scientific operations. */
 public enum Operation {
-    ADD, SUBTRACT, MULTIPLY, DIVIDE
+    ADD, SUBTRACT, MULTIPLY, DIVIDE, SQRT, POWER, LN, SIN, COS, TAN
 }

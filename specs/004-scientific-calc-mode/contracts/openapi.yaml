@@ -1,0 +1,358 @@
+openapi: "3.1.0"
+info:
+  title: Calculator API — Scientific Mode (Feature 004)
+  description: |
+    Full API contract for the calculator application after feature 004 (Scientific Calculator Mode).
+
+    This document supersedes the feature-003 contract for `POST /api/calculate` and extends
+    the `HistoryEntry` schema to reflect the updated `Operation` enum and nullable `operandB`.
+
+    All endpoints require an active authenticated session (cookie-based, managed by Spring Security).
+    Unauthenticated requests receive `401 Unauthorized`.
+  version: "2.0.0"
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+security:
+  - cookieAuth: []
+
+tags:
+  - name: Calculate
+    description: Perform a calculation (basic or scientific)
+  - name: History
+    description: Retrieve and manage calculation history
+
+paths:
+  /api/calculate:
+    post:
+      operationId: calculate
+      summary: Perform an arithmetic or scientific calculation
+      description: |
+        Performs the requested operation on the supplied input(s) and returns the numeric result.
+        A successful calculation is automatically persisted to the authenticated user's history.
+
+        **Arity rules**:
+        - *Unary operations* (`SQRT`, `LN`, `SIN`, `COS`, `TAN`) require only `a`; `b` MUST be
+          omitted or `null`.
+        - *Binary operations* (`ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `POWER`) require both
+          `a` and `b`; a missing or null `b` returns `400`.
+
+        **Trigonometric convention**: `SIN`, `COS`, and `TAN` accept input in **degrees**.
+        The server converts degrees to radians before calling `Math.*`.
+
+        **Domain errors** (return `400 { "error": "..." }`):
+        - `DIVIDE` with `b = 0`
+        - `SQRT` with `a < 0`
+        - `LN` with `a ≤ 0`
+        - `TAN` with `a = 90 + k × 180` (for any integer k)
+        - Any binary operation with `b` absent or null
+
+        **CSRF note**: `/api/**` is CSRF-exempt per `SecurityConfig`. No `X-XSRF-TOKEN` header required.
+      tags:
+        - Calculate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalculationRequest"
+            examples:
+              basicAdd:
+                summary: Basic — Add two numbers
+                value:
+                  a: 6.0
+                  b: 7.0
+                  operation: "ADD"
+              basicDivide:
+                summary: Basic — Divide (valid)
+                value:
+                  a: 10.0
+                  b: 4.0
+                  operation: "DIVIDE"
+              scientificSqrt:
+                summary: Scientific — Square root (unary; no b)
+                value:
+                  a: 9.0
+                  operation: "SQRT"
+              scientificPower:
+                summary: Scientific — Power (binary)
+                value:
+                  a: 2.0
+                  b: 8.0
+                  operation: "POWER"
+              scientificLn:
+                summary: Scientific — Natural log (unary; no b)
+                value:
+                  a: 1.0
+                  operation: "LN"
+              scientificSin:
+                summary: Scientific — Sine in degrees (unary; no b)
+                value:
+                  a: 90.0
+                  operation: "SIN"
+              scientificTan:
+                summary: Scientific — Tangent valid angle (unary; no b)
+                value:
+                  a: 45.0
+                  operation: "TAN"
+      responses:
+        "200":
+          description: Calculation succeeded; result returned and saved to history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalculationSuccess"
+              examples:
+                sqrtResult:
+                  summary: sqrt(9) = 3
+                  value:
+                    result: 3.0
+                powerResult:
+                  summary: 2^8 = 256
+                  value:
+                    result: 256.0
+                sinResult:
+                  summary: sin(90°) = 1
+                  value:
+                    result: 1.0
+        "400":
+          description: |
+            Validation or domain error. One of:
+            - Missing or null required field (`a` or `operation`)
+            - Invalid `operation` value (not a known enum member)
+            - Binary operation supplied without `b`
+            - Domain error (division by zero, sqrt of negative, ln of non-positive, tan of 90°+k·180°)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalculationError"
+              examples:
+                missingA:
+                  summary: Field 'a' is null
+                  value:
+                    error: "Field 'a' must not be null."
+                missingOperation:
+                  summary: Field 'operation' is null
+                  value:
+                    error: "Field 'operation' must not be null."
+                missingBForBinary:
+                  summary: Binary operation sent without b
+                  value:
+                    error: "Second operand is required for DIVIDE."
+                divideByZero:
+                  summary: Division by zero
+                  value:
+                    error: "Division by zero is not allowed."
+                sqrtNegative:
+                  summary: Square root of negative number
+                  value:
+                    error: "Square root of a negative number is undefined."
+                lnNonPositive:
+                  summary: Natural log of zero or negative
+                  value:
+                    error: "Natural logarithm of zero or a negative number is undefined."
+                tanUndefined:
+                  summary: Tangent at 90°
+                  value:
+                    error: "tan(90°) is undefined."
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalculationError"
+              example:
+                error: "Authentication required."
+
+  /api/history:
+    get:
+      operationId: getCalculationHistory
+      summary: Get the current user's calculation history
+      description: |
+        Returns the most recent 20 calculation entries for the authenticated user,
+        ordered newest first. Returns an empty array when no history exists.
+        Only the calling user's entries are returned; no cross-user access is possible.
+
+        Scientific calculations (SQRT, POWER, LN, SIN, COS, TAN) appear in history
+        alongside basic calculations. For unary operations, `operandB` is `null`.
+      tags:
+        - History
+      responses:
+        "200":
+          description: List of calculation history entries (may be empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 20
+                items:
+                  $ref: "#/components/schemas/HistoryEntry"
+              examples:
+                mixedHistory:
+                  summary: Mixed basic and scientific entries
+                  value:
+                    - operandA: 9.0
+                      operandB: null
+                      operation: "SQRT"
+                      result: 3.0
+                      calculatedAt: "2026-05-15T11:00:05.000Z"
+                    - operandA: 2.0
+                      operandB: 8.0
+                      operation: "POWER"
+                      result: 256.0
+                      calculatedAt: "2026-05-15T10:59:50.000Z"
+                    - operandA: 10.0
+                      operandB: 3.0
+                      operation: "DIVIDE"
+                      result: 3.3333333333333335
+                      calculatedAt: "2026-05-15T10:59:20.000Z"
+                empty:
+                  summary: User with no history
+                  value: []
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalculationError"
+              example:
+                error: "Authentication required."
+
+    delete:
+      operationId: clearCalculationHistory
+      summary: Clear the current user's calculation history
+      description: |
+        Permanently deletes all calculation history entries for the authenticated user.
+        Returns `204 No Content` on success. The operation is idempotent.
+        Only the calling user's entries are deleted.
+
+        **CSRF note**: Exempt from CSRF validation per `SecurityConfig`.
+      tags:
+        - History
+      responses:
+        "204":
+          description: History cleared successfully (or was already empty)
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalculationError"
+              example:
+                error: "Authentication required."
+
+components:
+  schemas:
+    CalculationRequest:
+      type: object
+      description: |
+        Request body for POST /api/calculate.
+        `b` is required for binary operations and must be omitted or null for unary operations.
+      required:
+        - a
+        - operation
+      properties:
+        a:
+          type: number
+          format: double
+          description: First operand (always required)
+          example: 9.0
+        b:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Second operand. Required for binary operations: ADD, SUBTRACT, MULTIPLY, DIVIDE, POWER.
+            Must be omitted or null for unary operations: SQRT, LN, SIN, COS, TAN.
+          example: null
+        operation:
+          $ref: "#/components/schemas/Operation"
+
+    Operation:
+      type: string
+      description: |
+        Calculator operation. Unary operations (SQRT, LN, SIN, COS, TAN) require only `a`.
+        Binary operations (ADD, SUBTRACT, MULTIPLY, DIVIDE, POWER) require both `a` and `b`.
+        Trigonometric operations (SIN, COS, TAN) accept `a` in degrees.
+      enum:
+        - ADD
+        - SUBTRACT
+        - MULTIPLY
+        - DIVIDE
+        - SQRT
+        - POWER
+        - LN
+        - SIN
+        - COS
+        - TAN
+      example: "SQRT"
+
+    CalculationSuccess:
+      type: object
+      description: Successful calculation response — `result` is set; `error` is absent
+      required:
+        - result
+      properties:
+        result:
+          type: number
+          format: double
+          description: Computed numeric result
+          example: 3.0
+
+    CalculationError:
+      type: object
+      description: Error response — `error` is set; `result` is absent
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: "Square root of a negative number is undefined."
+
+    HistoryEntry:
+      type: object
+      description: |
+        A single saved calculation belonging to the authenticated user.
+        `operandB` is null for unary operations (SQRT, LN, SIN, COS, TAN).
+      required:
+        - operandA
+        - operation
+        - result
+        - calculatedAt
+      properties:
+        operandA:
+          type: number
+          format: double
+          description: First (or only) operand
+          example: 9.0
+        operandB:
+          type: number
+          format: double
+          nullable: true
+          description: Second operand; null for unary operations
+          example: null
+        operation:
+          $ref: "#/components/schemas/Operation"
+        result:
+          type: number
+          format: double
+          description: Computed result
+          example: 3.0
+        calculatedAt:
+          type: string
+          format: date-time
+          description: UTC timestamp of the calculation (ISO-8601)
+          example: "2026-05-15T11:00:05.000Z"
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: |
+        Spring Security session cookie. Obtained by POSTing valid credentials to `/login`.
+        The `XSRF-TOKEN` cookie is also set but is not required for `/api/**` endpoints
+        (CSRF-exempt per `SecurityConfig`).

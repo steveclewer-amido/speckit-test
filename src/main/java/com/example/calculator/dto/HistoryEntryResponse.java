@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter;
 /** API response DTO for a single calculation history entry. Excludes id and username. */
 public record HistoryEntryResponse(
         double operandA,
-        double operandB,
+        Double operandB,
         String operation,
         double result,
         String calculatedAt

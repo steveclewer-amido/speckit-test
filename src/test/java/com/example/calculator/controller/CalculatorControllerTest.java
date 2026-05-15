@@ -181,6 +181,71 @@ class CalculatorControllerTest {
         verify(historyRepo, never()).save(any());
     }
 
+    // --- T008: Scientific mode — unary op (SQRT) without b → 200 ---
+
+    @Test
+    void sqrt_unary_noB_returns200WithResult() throws Exception {
+        mockMvc.perform(post("/api/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"a\":9,\"operation\":\"SQRT\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value(3.0));
+    }
+
+    @Test
+    void power_withBothOperands_returns200WithResult() throws Exception {
+        mockMvc.perform(post("/api/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"a\":2,\"b\":8,\"operation\":\"POWER\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value(256.0));
+    }
+
+    @Test
+    void sqrt_ofNegative_returns400WithExactError() throws Exception {
+        mockMvc.perform(post("/api/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"a\":-1,\"operation\":\"SQRT\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Square root of a negative number is undefined."));
+    }
+
+    @Test
+    void ln_ofZero_returns400WithExactError() throws Exception {
+        mockMvc.perform(post("/api/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"a\":0,\"operation\":\"LN\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Natural logarithm of zero or a negative number is undefined."));
+    }
+
+    @Test
+    void ln_ofNegative_returns400WithExactError() throws Exception {
+        mockMvc.perform(post("/api/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"a\":-5,\"operation\":\"LN\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Natural logarithm of zero or a negative number is undefined."));
+    }
+
+    @Test
+    void tan_ofNinetyDegrees_returns400WithExactError() throws Exception {
+        mockMvc.perform(post("/api/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"a\":90,\"operation\":\"TAN\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("tan(90\u00b0) is undefined."));
+    }
+
+    @Test
+    void divide_withoutB_returns400WithDomainError() throws Exception {
+        mockMvc.perform(post("/api/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"a\":10,\"operation\":\"DIVIDE\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Second operand is required for DIVIDE."));
+    }
+
     // --- History: US3 DELETE /api/history ---
 
     @Test

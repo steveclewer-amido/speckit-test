@@ -219,6 +219,88 @@
             background: #d70015;
             color: #fff;
         }
+
+        /* ── Mode toggle ───────────────────────────────── */
+
+        .btn-mode-toggle {
+            display: block;
+            width: 100%;
+            margin-bottom: 1.25rem;
+            padding: .5rem 1rem;
+            background: transparent;
+            color: #0071e3;
+            border: 1.5px solid #0071e3;
+            border-radius: 6px;
+            font-size: .875rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: background .15s, color .15s;
+        }
+
+        .btn-mode-toggle:hover {
+            background: #e8f1fc;
+        }
+
+        .btn-mode-toggle[aria-pressed="true"] {
+            background: #0071e3;
+            color: #fff;
+        }
+
+        /* ── Scientific section ───────────────────────── */
+
+        .sci-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: .5rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-sci {
+            padding: .55rem .5rem;
+            background: #fff;
+            color: #1d1d1f;
+            border: 1.5px solid #c7c7cc;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s, color .15s, border-color .15s;
+        }
+
+        .btn-sci:hover {
+            border-color: #0071e3;
+            color: #0071e3;
+        }
+
+        .btn-sci[aria-pressed="true"] {
+            background: #0071e3;
+            color: #fff;
+            border-color: #0071e3;
+        }
+
+        .btn-sci-calc {
+            display: block;
+            width: 100%;
+            padding: .65rem 1rem;
+            background: #0071e3;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        .btn-sci-calc:hover:not(:disabled) {
+            background: #0077ed;
+        }
+
+        .btn-sci-calc:disabled {
+            background: #aeaeb2;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -232,6 +314,10 @@
     </div>
 
     <form id="calcForm" novalidate>
+        <button type="button" id="modeToggle" class="btn-mode-toggle" aria-pressed="false">
+            Scientific Mode
+        </button>
+
         <div class="field">
             <label for="numA">First number</label>
             <input type="text"
@@ -245,30 +331,59 @@
             <span id="errA" class="field-error" role="alert" aria-live="assertive"></span>
         </div>
 
-        <div class="field">
-            <label for="numB">Second number</label>
-            <input type="text"
-                   id="numB"
-                   name="b"
-                   inputmode="decimal"
-                   autocomplete="off"
-                   aria-required="true"
-                   aria-describedby="errB"
-                   placeholder="e.g. 7">
-            <span id="errB" class="field-error" role="alert" aria-live="assertive"></span>
+        <!-- Basic section — visible by default -->
+        <div id="basic-section">
+            <div class="field">
+                <label for="numB">Second number</label>
+                <input type="text"
+                       id="numB"
+                       name="b"
+                       inputmode="decimal"
+                       autocomplete="off"
+                       aria-required="true"
+                       aria-describedby="errB"
+                       placeholder="e.g. 7">
+                <span id="errB" class="field-error" role="alert" aria-live="assertive"></span>
+            </div>
+
+            <div class="field">
+                <label for="operation">Operation</label>
+                <select id="operation" name="operation" aria-required="true">
+                    <option value="ADD">Add (+)</option>
+                    <option value="SUBTRACT">Subtract (−)</option>
+                    <option value="MULTIPLY">Multiply (×)</option>
+                    <option value="DIVIDE">Divide (÷)</option>
+                </select>
+            </div>
+
+            <button type="submit" id="calcBtn" aria-label="Calculate result">Calculate</button>
         </div>
 
-        <div class="field">
-            <label for="operation">Operation</label>
-            <select id="operation" name="operation" aria-required="true">
-                <option value="ADD">Add (+)</option>
-                <option value="SUBTRACT">Subtract (−)</option>
-                <option value="MULTIPLY">Multiply (×)</option>
-                <option value="DIVIDE">Divide (÷)</option>
-            </select>
-        </div>
+        <!-- Scientific section — hidden by default -->
+        <div id="scientific-section" style="display:none">
+            <div class="field" id="sci-b-field" style="display:none" aria-hidden="true">
+                <label for="sciNumB">Exponent</label>
+                <input type="text"
+                       id="sciNumB"
+                       inputmode="decimal"
+                       autocomplete="off"
+                       aria-required="false"
+                       aria-describedby="errSciB"
+                       placeholder="e.g. 3">
+                <span id="errSciB" class="field-error" role="alert" aria-live="assertive"></span>
+            </div>
 
-        <button type="submit" id="calcBtn" aria-label="Calculate result">Calculate</button>
+            <div class="sci-buttons">
+                <button type="button" class="btn-sci" data-op="SQRT" aria-pressed="false">&radic;</button>
+                <button type="button" class="btn-sci" data-op="POWER" aria-pressed="false">x&#696;</button>
+                <button type="button" class="btn-sci" data-op="LN" aria-pressed="false">ln</button>
+                <button type="button" class="btn-sci" data-op="SIN" aria-pressed="false">sin</button>
+                <button type="button" class="btn-sci" data-op="COS" aria-pressed="false">cos</button>
+                <button type="button" class="btn-sci" data-op="TAN" aria-pressed="false">tan</button>
+            </div>
+
+            <button type="button" id="sciCalcBtn" class="btn-sci-calc" aria-label="Calculate scientific result">Calculate</button>
+        </div>
     </form>
 
     <div id="status" role="alert" aria-live="polite" aria-atomic="true"></div>
@@ -286,13 +401,24 @@
 <script>
     'use strict';
 
-    const form    = document.getElementById('calcForm');
-    const numA    = document.getElementById('numA');
-    const numB    = document.getElementById('numB');
-    const errA    = document.getElementById('errA');
-    const errB    = document.getElementById('errB');
-    const calcBtn = document.getElementById('calcBtn');
-    const status  = document.getElementById('status');
+    const form         = document.getElementById('calcForm');
+    const numA         = document.getElementById('numA');
+    const numB         = document.getElementById('numB');
+    const errA         = document.getElementById('errA');
+    const errB         = document.getElementById('errB');
+    const calcBtn      = document.getElementById('calcBtn');
+    const status       = document.getElementById('status');
+    const modeToggle   = document.getElementById('modeToggle');
+    const basicSection = document.getElementById('basic-section');
+    const sciSection   = document.getElementById('scientific-section');
+    const sciBField    = document.getElementById('sci-b-field');
+    const sciNumB      = document.getElementById('sciNumB');
+    const errSciB      = document.getElementById('errSciB');
+    const sciCalcBtn   = document.getElementById('sciCalcBtn');
+
+    // --- Mode state ---
+    let sciMode     = false;
+    let activeSciOp = null;
 
     /** Returns true if value is a finite number string. */
     function isValidNumber(val) {
@@ -325,8 +451,7 @@
     }
 
     /**
-     * Client-side validation — runs before the API call.
-     * Handles spec FR-004 / US2 AC-1 (empty) and AC-2 (non-numeric).
+     * Basic-mode client-side validation.
      * Returns true only when all inputs are valid.
      */
     function validate() {
@@ -354,8 +479,9 @@
     }
 
     function setLoading(loading) {
-        calcBtn.disabled = loading;
-        calcBtn.textContent = loading ? 'Calculating\u2026' : 'Calculate';
+        const btn = sciMode ? sciCalcBtn : calcBtn;
+        btn.disabled = loading;
+        btn.textContent = loading ? 'Calculating\u2026' : 'Calculate';
     }
 
     // Inject CSRF token from cookie into the logout form before submission
@@ -367,20 +493,154 @@
         document.getElementById('logoutCsrf').value = decodeURIComponent(raw);
     });
 
-    // ── History panel ────────────────────────────────────────
+    // ── Shared calculate API call ─────────────────────────────
 
-    const historyList    = document.getElementById('historyList');
-    const historyEmpty   = document.getElementById('historyEmpty');
+    async function performCalculation(payload) {
+        setLoading(true);
+        try {
+            const response = await fetch('/api/calculate', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (response.ok && data.result !== undefined && data.result !== null) {
+                showStatus('Result: ' + data.result, 'success');
+                loadHistory();
+            } else {
+                showStatus(data.error || 'An unexpected error occurred.', 'error');
+            }
+        } catch {
+            showStatus('Unable to reach the server. Please try again.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // ── Basic-mode form submit ────────────────────────────────
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        clearStatus();
+        if (!validate()) return;
+        await performCalculation({
+            a:         Number(numA.value.trim()),
+            b:         Number(numB.value.trim()),
+            operation: document.getElementById('operation').value
+        });
+    });
+
+    // ── Mode toggle ───────────────────────────────────────────
+
+    function updateSciBField(op) {
+        const show = op === 'POWER';
+        sciBField.style.display = show ? '' : 'none';
+        sciBField.setAttribute('aria-hidden', show ? 'false' : 'true');
+        sciNumB.setAttribute('aria-required', show ? 'true' : 'false');
+    }
+
+    function updateSciButtonStates(activeOp) {
+        document.querySelectorAll('.btn-sci[data-op]').forEach(btn => {
+            btn.setAttribute('aria-pressed', btn.dataset.op === activeOp ? 'true' : 'false');
+        });
+    }
+
+    modeToggle.addEventListener('click', () => {
+        sciMode = !sciMode;
+        modeToggle.setAttribute('aria-pressed', sciMode ? 'true' : 'false');
+        modeToggle.textContent = sciMode ? 'Basic Mode' : 'Scientific Mode';
+        basicSection.style.display = sciMode ? 'none' : '';
+        sciSection.style.display   = sciMode ? '' : 'none';
+
+        // Clear all inputs and reset state
+        numA.value    = '';
+        numB.value    = '';
+        sciNumB.value = '';
+        clearFieldError(numA, errA);
+        clearFieldError(numB, errB);
+        clearFieldError(sciNumB, errSciB);
+        clearStatus();
+        activeSciOp = null;
+        updateSciBField(null);
+        updateSciButtonStates(null);
+    });
+
+    // ── Scientific operation buttons (select active op) ───────
+
+    document.querySelectorAll('.btn-sci[data-op]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activeSciOp = btn.dataset.op;
+            updateSciBField(activeSciOp);
+            updateSciButtonStates(activeSciOp);
+        });
+    });
+
+    // ── Scientific calculate button ───────────────────────────
+
+    sciCalcBtn.addEventListener('click', async () => {
+        clearStatus();
+        clearFieldError(numA, errA);
+
+        if (!activeSciOp) {
+            showStatus('Please select a scientific operation.', 'error');
+            return;
+        }
+
+        if (numA.value.trim() === '') {
+            setFieldError(numA, errA, 'First number is required.');
+            return;
+        }
+        if (!isValidNumber(numA.value)) {
+            setFieldError(numA, errA, 'First number must be a valid number.');
+            return;
+        }
+
+        const payload = { a: Number(numA.value.trim()), operation: activeSciOp };
+
+        if (activeSciOp === 'POWER') {
+            clearFieldError(sciNumB, errSciB);
+            if (sciNumB.value.trim() === '') {
+                setFieldError(sciNumB, errSciB, 'Exponent is required.');
+                return;
+            }
+            if (!isValidNumber(sciNumB.value)) {
+                setFieldError(sciNumB, errSciB, 'Exponent must be a valid number.');
+                return;
+            }
+            payload.b = Number(sciNumB.value.trim());
+        }
+
+        await performCalculation(payload);
+    });
+
+    // ── History panel ─────────────────────────────────────────
+
+    const historyList     = document.getElementById('historyList');
+    const historyEmpty    = document.getElementById('historyEmpty');
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
     const OP_SYMBOL = { ADD: '+', SUBTRACT: '\u2212', MULTIPLY: '\u00d7', DIVIDE: '\u00f7' };
 
     function formatEntry(entry) {
-        const sym = OP_SYMBOL[entry.operation] || entry.operation;
+        const op  = entry.operation;
+        const a   = entry.operandA;
+        const b   = entry.operandB;
         const res = Number.isInteger(entry.result)
             ? entry.result
             : Math.round(entry.result * 1e10) / 1e10;
-        return `${entry.operandA} ${sym} ${entry.operandB} = ${res}`;
+
+        switch (op) {
+            case 'SQRT':  return `\u221a${a} = ${res}`;
+            case 'LN':    return `ln(${a}) = ${res}`;
+            case 'SIN':   return `sin(${a}\u00b0) = ${res}`;
+            case 'COS':   return `cos(${a}\u00b0) = ${res}`;
+            case 'TAN':   return `tan(${a}\u00b0) = ${res}`;
+            case 'POWER': return `${a}^${b} = ${res}`;
+            default: {
+                const sym = OP_SYMBOL[op] || op;
+                return `${a} ${sym} ${b} = ${res}`;
+            }
+        }
     }
 
     async function loadHistory() {
@@ -420,42 +680,6 @@
 
     // Load history on page start
     loadHistory();
-
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        clearStatus();
-
-        if (!validate()) return;
-
-        setLoading(true);
-
-        const payload = {
-            a:         Number(numA.value.trim()),
-            b:         Number(numB.value.trim()),
-            operation: document.getElementById('operation').value
-        };
-
-        try {
-            const response = await fetch('/api/calculate', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.result !== undefined && data.result !== null) {
-                showStatus('Result: ' + data.result, 'success');
-                loadHistory();
-            } else {
-                showStatus(data.error || 'An unexpected error occurred.', 'error');
-            }
-        } catch {
-            showStatus('Unable to reach the server. Please try again.', 'error');
-        } finally {
-            setLoading(false);
-        }
-    });
 </script>
 </body>
 </html>
